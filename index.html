@@ -1,0 +1,2105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FleetGate Compliance & Access Control — 500-Vehicle Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            navy: {
+              900: '#0B132B',
+              800: '#1C2541',
+              700: '#3A506B',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for sleek enterprise look */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    @keyframes pulseBorder {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.35); }
+      50% { box-shadow: 0 0 0 10px rgba(225, 29, 72, 0); }
+    }
+    .gate-deny-pulse {
+      animation: pulseBorder 2s infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased selection:bg-indigo-600 selection:text-white">
+
+  <!-- Toast Notification Banner (Replaces alert()) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Mobile Sidebar Backdrop -->
+  <div id="sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-30 hidden lg:hidden"></div>
+
+  <div class="min-h-screen flex flex-col lg:flex-row">
+    <!-- LEFT SIDEBAR NAVIGATION -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 bg-navy-900 text-slate-200 transform -translate-x-full lg:translate-x-0 lg:static lg:inset-0 transition-transform duration-200 ease-in-out flex flex-col justify-between shadow-2xl">
+      <div>
+        <!-- Brand Logo -->
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+              <i class="fa-solid fa-shield-halved text-lg"></i>
+            </div>
+            <div>
+              <h1 class="font-extrabold text-white tracking-tight text-lg leading-tight">FleetGate<span class="text-indigo-400">Pro</span></h1>
+              <p class="text-[11px] text-slate-400 font-medium">Factory Gate & Fleet ERP</p>
+            </div>
+          </div>
+          <button onclick="toggleMobileSidebar()" class="lg:hidden text-slate-400 hover:text-white p-2 rounded-lg">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Fleet Capacity Pill -->
+        <div class="mx-4 mt-4 p-3 rounded-xl bg-navy-800/90 border border-slate-700/70 flex items-center justify-between">
+          <div>
+            <p class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Active Fleet Registry</p>
+            <p class="text-sm font-bold text-white mt-0.5">500 Company Vehicles</p>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            ₹0 API Mode
+          </span>
+        </div>
+
+        <!-- Primary Navigation Links -->
+        <nav class="mt-5 px-3 space-y-1.5" aria-label="Sidebar Navigation">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition-all bg-indigo-600 text-white shadow-md shadow-indigo-950/50">
+            <i class="fa-solid fa-chart-pie w-5 text-center"></i>
+            <span>Dashboard</span>
+          </button>
+
+          <button onclick="switchTab('directory')" id="nav-directory" class="nav-btn w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800 hover:text-white transition-all">
+            <span class="flex items-center gap-3">
+              <i class="fa-solid fa-truck-front w-5 text-center"></i>
+              <span>Fleet Directory</span>
+            </span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">500</span>
+          </button>
+
+          <button onclick="switchTab('vault')" id="nav-vault" class="nav-btn w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800 hover:text-white transition-all">
+            <span class="flex items-center gap-3">
+              <i class="fa-solid fa-file-shield w-5 text-center"></i>
+              <span>Upload & Renew Vault</span>
+            </span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-semibold">PUC 2026</span>
+          </button>
+
+          <button onclick="switchTab('gate')" id="nav-gate" class="nav-btn w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800 hover:text-white transition-all">
+            <span class="flex items-center gap-3">
+              <i class="fa-solid fa-torii-gate w-5 text-center"></i>
+              <span>Main Gate Check</span>
+            </span>
+            <span id="nav-blocked-badge" class="text-xs px-2 py-0.5 rounded-full bg-rose-600 text-white font-bold">3</span>
+          </button>
+
+          <button onclick="switchTab('alerts')" id="nav-alerts" class="nav-btn w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800 hover:text-white transition-all">
+            <i class="fa-brands fa-whatsapp w-5 text-center text-emerald-400"></i>
+            <span>Alerts & Free Setup</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Bottom Admin & Direct Alert Card -->
+      <div class="p-4 border-t border-slate-800 space-y-3">
+        <div class="p-3 rounded-xl bg-slate-800/70 border border-slate-700/60">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span>Alert Escalation No.</span>
+            <span class="text-emerald-400 font-medium"><i class="fa-solid fa-circle text-[7px] mr-1"></i>Ready</span>
+          </div>
+          <p class="font-mono text-xs font-semibold text-white">+91 77609 14701</p>
+          <p class="text-[11px] text-slate-400 truncate mt-0.5" id="sidebar-email-display">fleet.compliance@company.in</p>
+        </div>
+        <button onclick="openGovtRulesModal()" class="w-full py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-scale-balanced"></i>
+          <span>Govt. PUC Rules (2026)</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT SHELL -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- TOP HEADER BAR -->
+      <header class="bg-white border-b border-slate-200 sticky top-0 z-20 px-4 sm:px-6 py-3.5 shadow-2xs">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <!-- Left: Mobile Menu Trigger & Heading -->
+          <div class="flex items-start sm:items-center gap-3">
+            <button onclick="toggleMobileSidebar()" class="lg:hidden p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700">
+              <i class="fa-solid fa-bars"></i>
+            </button>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">FleetGate Compliance & Access Control</h2>
+                <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                  Main Gate Sync Live
+                </span>
+              </div>
+              <p class="text-xs sm:text-sm text-slate-500">Automated Document Tracking, Renewal Alerts & Factory Gate Clearance (500-Vehicle Fleet)</p>
+            </div>
+          </div>
+
+          <!-- Right: Global Quick Vehicle Search + Govt Rule Badge -->
+          <div class="flex items-center gap-2.5">
+            <div class="relative flex-1 sm:w-72">
+              <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+              <input
+                type="text"
+                id="global-search-input"
+                oninput="handleGlobalSearch(this.value)"
+                placeholder="Search Reg No (KA-01-AB-1234)..."
+                class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition font-medium"
+              />
+              <!-- Quick Search Dropdown -->
+              <div id="global-search-results" class="hidden absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-40 max-h-72 overflow-y-auto divide-y divide-slate-100"></div>
+            </div>
+
+            <button onclick="openGovtRulesModal()" title="View 2026 Govt. Emission Validity Matrix" class="shrink-0 px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
+              <i class="fa-solid fa-smog text-amber-600"></i>
+              <span class="hidden sm:inline">PUC Rules 2026</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- DYNAMIC VIEW CONTAINER -->
+      <main class="flex-1 p-4 sm:p-6 max-w-[1440px] w-full mx-auto space-y-6">
+
+        <!-- ========================================== -->
+        <!-- VIEW 1: DASHBOARD (COMMAND CENTER)         -->
+        <!-- ========================================== -->
+        <section id="view-dashboard" class="space-y-6">
+          <!-- 4 KPI SUMMARY CARDS -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <!-- Card 1: Total Fleet -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex items-start justify-between">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Company Fleet</p>
+                <div class="flex items-baseline gap-2 mt-2">
+                  <h3 class="text-3xl font-extrabold text-slate-900">500</h3>
+                  <span class="text-xs font-medium text-slate-500">Vehicles Registered</span>
+                </div>
+                <p class="text-xs text-indigo-600 font-medium mt-2 flex items-center gap-1">
+                  <i class="fa-solid fa-database"></i> Synced via Google Sheets (₹0)
+                </p>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-truck-moving"></i>
+              </div>
+            </div>
+
+            <!-- Card 2: Cleared for Gate Entry -->
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-2xs flex items-start justify-between">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Cleared for Main Gate</p>
+                <div class="flex items-baseline gap-2 mt-2">
+                  <h3 id="kpi-cleared" class="text-3xl font-extrabold text-emerald-600">452</h3>
+                  <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">90.4%</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-2">All RC, Insurance, PUC & Permit valid</p>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+            </div>
+
+            <!-- Card 3: Expiring Soon (<=30 Days) -->
+            <div class="bg-white rounded-2xl p-5 border border-amber-200 bg-gradient-to-br from-white to-amber-50/30 shadow-2xs flex items-start justify-between">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-amber-800">Expiring Soon (≤30 Days)</p>
+                <div class="flex items-baseline gap-2 mt-2">
+                  <h3 id="kpi-expiring" class="text-3xl font-extrabold text-amber-600">34</h3>
+                  <span class="text-xs font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">Early Warning</span>
+                </div>
+                <p class="text-xs text-amber-700 mt-2">10-day PUC advance window active</p>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-clock"></i>
+              </div>
+            </div>
+
+            <!-- Card 4: Blocked at Gate -->
+            <div class="bg-white rounded-2xl p-5 border border-rose-200 bg-gradient-to-br from-white to-rose-50/40 shadow-2xs flex items-start justify-between">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wider text-rose-800">Blocked at Main Gate</p>
+                <div class="flex items-baseline gap-2 mt-2">
+                  <h3 id="kpi-blocked" class="text-3xl font-extrabold text-rose-600">14</h3>
+                  <span class="text-xs font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">ENTRY DENIED</span>
+                </div>
+                <p class="text-xs text-rose-700 font-medium mt-2">Auto-locked until renewal upload</p>
+              </div>
+              <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-xl">
+                <i class="fa-solid fa-ban"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- MIDDLE GRID: URGENT ACTION FEED + DOCUMENT COMPLIANCE BREAKDOWN -->
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <!-- Left 2 Cols: Flagged & Blocked Vehicles Action Feed -->
+            <div class="xl:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col">
+              <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
+                    Priority Gate Blocks & Renewal Alerts
+                  </h3>
+                  <p class="text-xs text-slate-500 mt-0.5">Vehicles blocked from factory entry or approaching mandatory renewal deadlines</p>
+                </div>
+                <button onclick="sendDailyWhatsAppDigest()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition cursor-pointer">
+                  <i class="fa-brands fa-whatsapp text-base"></i>
+                  <span>Send Daily Digest (+91 7760914701)</span>
+                </button>
+              </div>
+
+              <div id="dashboard-priority-list" class="divide-y divide-slate-100 overflow-x-auto">
+                <!-- Populated dynamically via JS -->
+              </div>
+
+              <div class="p-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span class="text-slate-500">Showing active sample alerts from the 500-vehicle fleet</span>
+                <button onclick="switchTab('directory')" class="text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-1">
+                  View Full 500-Vehicle Directory <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Right 1 Col: Document Category Health & Quick Actions -->
+            <div class="space-y-6">
+              <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
+                <h3 class="text-base font-bold text-slate-900">500-Fleet Document Compliance</h3>
+                <p class="text-xs text-slate-500 mt-0.5 mb-4">Valid percentage across mandatory statutory documents</p>
+
+                <div class="space-y-4">
+                  <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                      <span class="text-slate-700">PUC Emission Certificate (CMVR 2026)</span>
+                      <span class="text-emerald-600">92.4% (462/500)</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="bg-emerald-500 h-full rounded-full" style="width: 92.4%"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                      <span class="text-slate-700">Commercial / Third-Party Insurance</span>
+                      <span class="text-indigo-600">95.8% (479/500)</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="bg-indigo-500 h-full rounded-full" style="width: 95.8%"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                      <span class="text-slate-700">Fitness Certificate (FC)</span>
+                      <span class="text-amber-600">91.0% (455/500)</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="bg-amber-500 h-full rounded-full" style="width: 91%"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                      <span class="text-slate-700">Registration Certificate (RC)</span>
+                      <span class="text-emerald-600">99.2% (496/500)</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="bg-emerald-500 h-full rounded-full" style="width: 99.2%"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                      <span class="text-slate-700">National / State Goods Permit</span>
+                      <span class="text-indigo-600">94.6% (473/500)</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div class="bg-indigo-500 h-full rounded-full" style="width: 94.6%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Operator Launchpad -->
+              <div class="bg-navy-900 text-white rounded-2xl p-5 shadow-md">
+                <h4 class="font-bold text-sm text-indigo-300 uppercase tracking-wider">Quick Operator Actions</h4>
+                <div class="mt-3 grid grid-cols-1 gap-2.5">
+                  <button onclick="switchTab('vault')" class="w-full py-2.5 px-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-left text-xs font-semibold flex items-center justify-between transition">
+                    <span><i class="fa-solid fa-cloud-arrow-up mr-2"></i>Upload Renewed PUC / Insurance</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                  <button onclick="switchTab('gate')" class="w-full py-2.5 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-left text-xs font-semibold flex items-center justify-between transition">
+                    <span><i class="fa-solid fa-shield-check mr-2 text-emerald-400"></i>Launch Security Gate Terminal</span>
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: FLEET DIRECTORY (500 VEHICLES)     -->
+        <!-- ========================================== -->
+        <section id="view-directory" class="hidden space-y-5">
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <h3 class="text-lg font-extrabold text-slate-900">Master Fleet Compliance Directory</h3>
+                <p class="text-xs text-slate-500">Live document expiry tracking across 500 registered commercial & employee vehicles</p>
+              </div>
+
+              <!-- Filter Pills -->
+              <div class="flex flex-wrap items-center gap-2">
+                <button onclick="setDirectoryFilter('ALL')" id="filter-ALL" class="dir-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white">All Fleet (500)</button>
+                <button onclick="setDirectoryFilter('CLEARED')" id="filter-CLEARED" class="dir-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200">Cleared</button>
+                <button onclick="setDirectoryFilter('EXPIRING')" id="filter-EXPIRING" class="dir-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100">Expiring Soon</button>
+                <button onclick="setDirectoryFilter('BLOCKED')" id="filter-BLOCKED" class="dir-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100">Blocked at Gate</button>
+                <button onclick="setDirectoryFilter('EV')" id="filter-EV" class="dir-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200 hover:bg-teal-100">EV (PUC Exempt)</button>
+              </div>
+            </div>
+
+            <!-- Search Input inside Directory -->
+            <div class="mt-4 flex flex-col sm:flex-row gap-3">
+              <div class="relative flex-1">
+                <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input
+                  type="text"
+                  id="directory-search"
+                  oninput="renderDirectoryTable()"
+                  placeholder="Filter by Registration No., Driver Name, Transporter, or Emission Norm (BS-VI, BS-IV, EV)..."
+                  class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                />
+              </div>
+              <button onclick="switchTab('vault')" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 shrink-0 cursor-pointer">
+                <i class="fa-solid fa-plus"></i> Add / Upload Vehicle Doc
+              </button>
+            </div>
+          </div>
+
+          <!-- Responsive Master Table -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th class="py-3.5 px-4">Vehicle & Driver</th>
+                    <th class="py-3.5 px-4">Emission Norm & Age</th>
+                    <th class="py-3.5 px-4">PUC (Govt. Rule)</th>
+                    <th class="py-3.5 px-4">Insurance</th>
+                    <th class="py-3.5 px-4">Fitness / Permit</th>
+                    <th class="py-3.5 px-4">Main Gate Status</th>
+                    <th class="py-3.5 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="directory-table-body" class="divide-y divide-slate-100 text-sm">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Simulated 500-Vehicle Pagination Footer -->
+            <div class="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
+              <p>Showing <strong id="dir-showing-count">8</strong> active records out of <strong>500 total fleet vehicles</strong> synced from Master Sheet.</p>
+              <div class="flex items-center gap-1.5">
+                <span class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold">Page 1</span>
+                <span class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-600">2</span>
+                <span class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-600">3</span>
+                <span class="px-2 py-1 text-slate-400">...</span>
+                <span class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-600">50 (500 Vehicles)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: UPLOAD & RENEW VAULT (SMART PUC)   -->
+        <!-- ========================================== -->
+        <section id="view-vault" class="hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left 2 Columns: Upload & Smart Govt PUC Calculator Form -->
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                <div>
+                  <h3 class="text-lg font-extrabold text-slate-900">Document Upload & Renewal Vault</h3>
+                  <p class="text-xs text-slate-500">Upload PDF/Image to Google Drive & automatically calculate 2026 Govt. PUC validity</p>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> CMVR Rule 115(7) Auto-Check
+                </span>
+              </div>
+
+              <form id="doc-upload-form" onsubmit="handleDocumentSave(event)" class="mt-5 space-y-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <!-- Vehicle Registration Number -->
+                  <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Vehicle Registration No. *</label>
+                    <input
+                      type="text"
+                      id="form-reg-no"
+                      list="vehicle-datalist"
+                      required
+                      oninput="prefillVehicleDetails(this.value)"
+                      placeholder="e.g. KA-51-MN-8890"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-sm uppercase focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                    <datalist id="vehicle-datalist"></datalist>
+                  </div>
+
+                  <!-- Document Type -->
+                  <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Document Type *</label>
+                    <select id="form-doc-type" onchange="recalculateGovtPucRule()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                      <option value="PUC">PUC (Pollution Under Control / Emission Test)</option>
+                      <option value="INSURANCE">Vehicle Insurance Policy</option>
+                      <option value="FITNESS">Fitness Certificate (FC)</option>
+                      <option value="PERMIT">National / State Goods Permit</option>
+                      <option value="RC">Registration Certificate (RC)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Vehicle Regulatory Specs (Used for Govt PUC Calculation) -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-4">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-extrabold uppercase tracking-wider text-indigo-900">
+                      <i class="fa-solid fa-car-side mr-1.5 text-indigo-600"></i>Vehicle Regulatory Specs (RC Data)
+                    </span>
+                    <button type="button" onclick="openGovtRulesModal()" class="text-xs font-semibold text-indigo-600 hover:underline">
+                      View Official Govt. Rule Chart
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">1st Registration Date *</label>
+                      <input
+                        type="date"
+                        id="form-reg-date"
+                        value="2022-05-15"
+                        onchange="recalculateGovtPucRule()"
+                        required
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">Emission Standard *</label>
+                      <select id="form-emission-norm" onchange="recalculateGovtPucRule()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="BS-VI">BS-VI (BS6)</option>
+                        <option value="BS-IV">BS-IV (BS4)</option>
+                        <option value="BS-III">BS-I / BS-II / BS-III</option>
+                        <option value="EV">Electric Vehicle (EV)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">Vehicle Category *</label>
+                      <select id="form-usage-type" onchange="recalculateGovtPucRule()" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-medium bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        <option value="COMMERCIAL">Commercial / Transport</option>
+                        <option value="PRIVATE">Private / Non-Transport</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Test Date & Auto-Calculated Expiry Date -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Test / Issue Date *</label>
+                    <input
+                      type="date"
+                      id="form-issue-date"
+                      onchange="recalculateGovtPucRule()"
+                      required
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+                      Valid Until (Expiry Date) *
+                    </label>
+                    <input
+                      type="date"
+                      id="form-expiry-date"
+                      required
+                      class="w-full px-3.5 py-2.5 rounded-xl border-2 border-indigo-300 bg-indigo-50/40 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <!-- LIVE GOVT. PUC RULE ENGINE RESULT CARD -->
+                <div id="govt-rule-live-box" class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 space-y-2">
+                  <!-- Populated dynamically by recalculateGovtPucRule() -->
+                </div>
+
+                <!-- File Upload Dropzone -->
+                <div>
+                  <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Attach Scanned Certificate (PDF / JPG / PNG)</label>
+                  <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl bg-slate-50 hover:bg-indigo-50/30 cursor-pointer transition">
+                    <div class="flex flex-col items-center justify-center pt-3 pb-4 text-center px-4">
+                      <i class="fa-solid fa-cloud-arrow-up text-2xl text-indigo-600 mb-1.5"></i>
+                      <p id="file-upload-label" class="text-xs font-semibold text-slate-700">Click to select certificate PDF or photo (Stored in Free Google Drive)</p>
+                      <p class="text-[11px] text-slate-400 mt-0.5">Max 10 MB • Auto-organizes into Vehicle Folder</p>
+                    </div>
+                    <input type="file" id="form-doc-file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(this)" class="hidden" />
+                  </label>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
+                  <button type="button" onclick="resetVaultForm()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 transition">
+                    Reset Form
+                  </button>
+                  <button type="submit" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 transition cursor-pointer">
+                    <i class="fa-solid fa-check-double"></i>
+                    <span>Save & Unlock Main Gate Status</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Right 1 Column: Summary of 2026 Govt. PUC Rules -->
+            <div class="space-y-5">
+              <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-2xs">
+                <div class="flex items-center gap-2.5 mb-3">
+                  <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                    <i class="fa-solid fa-book-open"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-sm font-extrabold text-slate-900">Govt. PUC Rules (2026)</h4>
+                    <p class="text-[11px] text-slate-500">CMVR Rule 115(7) Mandatory Norms</p>
+                  </div>
+                </div>
+
+                <div class="space-y-2.5 text-xs">
+                  <div class="p-2.5 rounded-xl bg-teal-50 border border-teal-200 flex justify-between items-center">
+                    <span class="font-bold text-teal-900">Electric Vehicles (EV)</span>
+                    <span class="px-2 py-0.5 rounded bg-teal-600 text-white font-bold">EXEMPT</span>
+                  </div>
+                  <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+                    <div>
+                      <p class="font-bold text-slate-800">BS-VI Private (≤6 Yrs)</p>
+                      <p class="text-[11px] text-slate-500">Non-transport company cars</p>
+                    </div>
+                    <span class="font-extrabold text-indigo-700">3 Years</span>
+                  </div>
+                  <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+                    <div>
+                      <p class="font-bold text-slate-800">BS-VI Commercial (≤6 Yrs)</p>
+                      <p class="text-[11px] text-slate-500">Trucks, vans, logistics fleet</p>
+                    </div>
+                    <span class="font-extrabold text-indigo-700">2 Years</span>
+                  </div>
+                  <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+                    <div>
+                      <p class="font-bold text-slate-800">BS-VI (6 to 10 Yrs Old)</p>
+                      <p class="text-[11px] text-slate-500">Private & Commercial</p>
+                    </div>
+                    <span class="font-extrabold text-slate-800">1 Year</span>
+                  </div>
+                  <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center">
+                    <div>
+                      <p class="font-bold text-slate-800">BS-VI (&gt;10 Yrs) & BS-IV</p>
+                      <p class="text-[11px] text-slate-500">All vehicle categories</p>
+                    </div>
+                    <span class="font-extrabold text-amber-700">6 Months</span>
+                  </div>
+                  <div class="p-2.5 rounded-xl bg-rose-50 border border-rose-200 flex justify-between items-center">
+                    <div>
+                      <p class="font-bold text-rose-900">BS-I, BS-II, BS-III</p>
+                      <p class="text-[11px] text-rose-700">Older diesel/petrol vehicles</p>
+                    </div>
+                    <span class="font-extrabold text-rose-700">3 Months</span>
+                  </div>
+                </div>
+
+                <div class="mt-4 p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 text-[11px] text-indigo-950 leading-relaxed">
+                  <strong>10-Day Advance Renewal Rule:</strong> Renewing within 10 days before expiry preserves full continuity from the old expiry date. Late renewal starts strictly from test date and blocks factory gate entry in the interim.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 4: MAIN GATE SECURITY CHECK           -->
+        <!-- ========================================== -->
+        <section id="view-gate" class="hidden space-y-6">
+          <!-- Security Guard Verification Console -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+              <div>
+                <span class="px-2.5 py-1 rounded-md text-[11px] font-extrabold uppercase tracking-wider bg-navy-900 text-white">
+                  Security Guard Desk Terminal • Gate #01
+                </span>
+                <h3 class="text-xl font-extrabold text-slate-900 mt-2">Factory Main Gate Vehicle Clearance</h3>
+                <p class="text-xs text-slate-500">Enter vehicle registration number to verify RC, Insurance, Fitness & Govt. PUC compliance before opening boom barrier</p>
+              </div>
+
+              <!-- Quick Demo Test Buttons -->
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-xs font-semibold text-slate-500 mr-1">Quick Test:</span>
+                <button onclick="checkGateVehicle('KA-01-AB-1234')" class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold cursor-pointer">
+                  KA-01-AB-1234 (Valid BS-VI)
+                </button>
+                <button onclick="checkGateVehicle('KA-51-MN-8890')" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-bold cursor-pointer">
+                  KA-51-MN-8890 (Expired PUC)
+                </button>
+                <button onclick="checkGateVehicle('KA-02-EV-9001')" class="px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold cursor-pointer">
+                  KA-02-EV-9001 (EV Exempt)
+                </button>
+              </div>
+            </div>
+
+            <!-- Big Search Bar for Security Guard -->
+            <div class="mt-5 flex flex-col sm:flex-row gap-3">
+              <div class="relative flex-1">
+                <i class="fa-solid fa-id-card-clip absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                <input
+                  type="text"
+                  id="gate-search-input"
+                  onkeyup="if(event.key==='Enter') checkGateVehicle(this.value)"
+                  placeholder="ENTER VEHICLE NUMBER (e.g. KA-51-MN-8890)"
+                  class="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-slate-300 focus:border-indigo-600 focus:outline-none font-mono text-lg sm:text-xl font-bold uppercase tracking-wider bg-slate-50 focus:bg-white"
+                />
+              </div>
+              <button onclick="checkGateVehicle(document.getElementById('gate-search-input').value)" class="px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-base shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2.5 transition cursor-pointer">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>VERIFY GATE ACCESS</span>
+              </button>
+            </div>
+
+            <!-- GATE DECISION RESULT BANNER -->
+            <div id="gate-result-display" class="mt-6">
+              <!-- Populated dynamically with massive GREEN ALLOW or RED DENY banner -->
+            </div>
+          </div>
+
+          <!-- Recent Gate Verification Log -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h4 class="text-sm font-extrabold text-slate-900">Today's Main Gate Security Scan Log</h4>
+              <span class="text-xs text-slate-500">Auto-logged to Google Sheet</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                  <tr>
+                    <th class="py-3 px-4">Timestamp</th>
+                    <th class="py-3 px-4">Vehicle No.</th>
+                    <th class="py-3 px-4">Emission / PUC Rule</th>
+                    <th class="py-3 px-4">Gate Decision</th>
+                    <th class="py-3 px-4">Remarks / Alert Action</th>
+                  </tr>
+                </thead>
+                <tbody id="gate-log-body" class="divide-y divide-slate-100">
+                  <!-- Populated via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 5: ALERTS & ZERO-COST GOOGLE SETUP    -->
+        <!-- ========================================== -->
+        <section id="view-alerts" class="hidden space-y-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: Escalation Logic & Recipient Config -->
+            <div class="lg:col-span-2 space-y-6">
+              <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs">
+                <h3 class="text-lg font-extrabold text-slate-900">5-Stage Automated Escalation & Gate-Block Logic</h3>
+                <p class="text-xs text-slate-500 mt-0.5 mb-4">Zero recurring API fees — uses scheduled Gmail digests + 1-click WhatsApp Web triggers</p>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-600 font-bold uppercase border-b border-slate-200">
+                      <tr>
+                        <th class="py-3 px-3.5">Stage</th>
+                        <th class="py-3 px-3.5">Timeline</th>
+                        <th class="py-3 px-3.5">Gate Access</th>
+                        <th class="py-3 px-3.5">WhatsApp & Email Action</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                      <tr>
+                        <td class="py-3 px-3.5 font-bold text-slate-800">Stage 1: Early Warning</td>
+                        <td class="py-3 px-3.5 font-mono">30 Days Prior</td>
+                        <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">ALLOWED</span></td>
+                        <td class="py-3 px-3.5 text-slate-600">Automated Morning Email Digest to Fleet Manager</td>
+                      </tr>
+                      <tr>
+                        <td class="py-3 px-3.5 font-bold text-amber-800">Stage 2: PUC Window</td>
+                        <td class="py-3 px-3.5 font-mono">10 Days Prior</td>
+                        <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">AMBER WARN</span></td>
+                        <td class="py-3 px-3.5 text-slate-600">Govt. 10-day advance renewal window opens; WhatsApp + Email reminder</td>
+                      </tr>
+                      <tr>
+                        <td class="py-3 px-3.5 font-bold text-orange-800">Stage 3: Final Notice</td>
+                        <td class="py-3 px-3.5 font-mono">1 Day Prior</td>
+                        <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">FINAL WARN</span></td>
+                        <td class="py-3 px-3.5 text-slate-600">High-priority alert: "Vehicle auto-blocks at Main Gate tomorrow"</td>
+                      </tr>
+                      <tr class="bg-rose-50/40">
+                        <td class="py-3 px-3.5 font-bold text-rose-800">Stage 4: Expired</td>
+                        <td class="py-3 px-3.5 font-mono">Day 0 (Expired)</td>
+                        <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded bg-rose-600 text-white font-bold">BLOCKED</span></td>
+                        <td class="py-3 px-3.5 text-rose-900 font-medium">Auto-locked on Gate Security Screen + Email & WhatsApp alert</td>
+                      </tr>
+                      <tr class="bg-rose-50/70">
+                        <td class="py-3 px-3.5 font-bold text-rose-900">Stage 5: Gate Attempt</td>
+                        <td class="py-3 px-3.5 font-mono">Real-Time</td>
+                        <td class="py-3 px-3.5"><span class="px-2 py-0.5 rounded bg-rose-700 text-white font-bold">DENIED</span></td>
+                        <td class="py-3 px-3.5 text-rose-900 font-medium">Guard clicks 1-tap WhatsApp alert to <strong>+91 7760914701</strong></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Free Google Apps Script Code Box -->
+              <div class="bg-navy-900 text-slate-200 rounded-2xl p-6 shadow-md">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                  <div>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">100% Free Backend (₹0/Month)</span>
+                    <h4 class="text-base font-bold text-white">Google Sheets + Drive + Automated Gmail Script</h4>
+                  </div>
+                  <button onclick="copyAppsScriptCode()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 self-start cursor-pointer">
+                    <i class="fa-regular fa-copy"></i> Copy Apps Script
+                  </button>
+                </div>
+                <p class="text-xs text-slate-400 mb-3">
+                  Paste this into <strong>Extensions &rarr; Apps Script</strong> inside your 500-vehicle Google Sheet and set a daily 8:00 AM trigger. Zero server or API fees.
+                </p>
+                <pre id="apps-script-code" class="bg-slate-950/90 border border-slate-800 rounded-xl p-4 text-xs font-mono text-emerald-300 overflow-x-auto leading-relaxed">function checkFleetComplianceAndSendEmails() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Fleet500");
+  const data = sheet.getDataRange().getValues();
+  const today = new Date();
+  const adminEmail = "fleet.compliance@company.in";
+  let blockedList = [];
+  let expiringList = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const regNo = data[i][0];
+    const pucExpiry = new Date(data[i][4]);
+    const insExpiry = new Date(data[i][5]);
+    const minExpiry = new Date(Math.min(pucExpiry, insExpiry));
+    const daysLeft = Math.ceil((minExpiry - today) / (1000 * 60 * 60 * 24));
+
+    if (daysLeft < 0) {
+      sheet.getRange(i + 1, 8).setValue("BLOCKED");
+      blockedList.push(regNo + " (Expired " + Math.abs(daysLeft) + "d ago)");
+    } else if (daysLeft <= 30) {
+      sheet.getRange(i + 1, 8).setValue("EXPIRING_SOON");
+      expiringList.push(regNo + " (" + daysLeft + " days left)");
+    } else {
+      sheet.getRange(i + 1, 8).setValue("CLEARED");
+    }
+  }
+
+  if (blockedList.length > 0 || expiringList.length > 0) {
+    const body = "FleetGate Daily Compliance Summary:\n\n" +
+      "RED GATE-BLOCKED VEHICLES (" + blockedList.length + "):\n" + blockedList.join("\n") +
+      "\n\nAMBER EXPIRING SOON (" + expiringList.length + "):\n" + expiringList.join("\n") +
+      "\n\nWhatsApp Escalation Contact: +91 7760914701";
+    MailApp.sendEmail(adminEmail, "FleetGate Alert: " + blockedList.length + " Vehicles Blocked at Gate", body);
+  }
+}</pre>
+              </div>
+            </div>
+
+            <!-- Right: Alert Contact Configuration -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs h-fit space-y-4">
+              <!-- Google Apps Script Live Backend Sync Panel -->
+              <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <h4 class="text-sm font-extrabold text-indigo-950 flex items-center gap-1.5">
+                    <i class="fa-solid fa-link text-indigo-600"></i> Google Sheets / Drive Sync
+                  </h4>
+                  <span id="script-sync-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">
+                    Local Demo Mode
+                  </span>
+                </div>
+                <p class="text-[11px] text-slate-600 leading-relaxed">
+                  Paste your deployed Google Apps Script <strong>/exec</strong> Web App URL below (or set <code>SCRIPT_URL</code> in code). Saved in your browser automatically.
+                </p>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Apps Script Web App URL (/exec)</label>
+                  <input
+                    type="url"
+                    id="config-script-url"
+                    placeholder="https://script.google.com/macros/s/.../exec"
+                    class="w-full px-3 py-2 rounded-xl border border-indigo-300 bg-white font-mono text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                  />
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <button type="button" onclick="saveAndTestScriptUrl()" class="py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
+                    <i class="fa-solid fa-plug-circle-check"></i> Save & Test
+                  </button>
+                  <button type="button" onclick="syncFromGoogleSheet(true)" class="py-2 px-3 rounded-xl bg-white hover:bg-slate-100 text-indigo-800 border border-indigo-300 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer">
+                    <i class="fa-solid fa-rotate"></i> Sync Now
+                  </button>
+                </div>
+              </div>
+
+              <hr class="border-slate-100" />
+
+              <h4 class="text-base font-extrabold text-slate-900">Alert Recipient Settings</h4>
+              <p class="text-xs text-slate-500">Configure where WhatsApp & Email gate alerts are routed.</p>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Primary WhatsApp Number</label>
+                <input type="text" id="config-whatsapp" value="+91 7760914701" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 font-mono text-sm font-semibold" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Company Compliance Email ID</label>
+                <input type="email" id="config-email" value="fleet.compliance@company.in" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Main Gate Security Supervisor Email</label>
+                <input type="email" id="config-gate-email" value="maingate.security@company.in" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm" />
+              </div>
+
+              <button onclick="saveAlertSettings()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition cursor-pointer">
+                Save Recipient Settings
+              </button>
+
+              <hr class="border-slate-100" />
+
+              <div class="space-y-2">
+                <p class="text-xs font-bold text-slate-700">Test Zero-Cost Alert Channels:</p>
+                <button onclick="sendTestWhatsApp()" class="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer">
+                  <i class="fa-brands fa-whatsapp text-base"></i> Test WhatsApp Alert Now
+                </button>
+                <button onclick="simulateEmailAlert()" class="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer">
+                  <i class="fa-solid fa-envelope"></i> Simulate Automated Email Digest
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- MODAL: 2026 GOVT. PUC EMISSION RULES REFERENCE MATRIX     -->
+  <!-- ========================================================= -->
+  <div id="govt-rules-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
+    <div class="bg-white rounded-2xl max-w-3xl w-full border border-slate-200 shadow-2xl overflow-hidden animate-fadeIn">
+      <div class="p-5 bg-navy-900 text-white flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-scale-balanced"></i>
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-extrabold">Govt. of India PUC Validity Rules (2026 Amendment)</h3>
+            <p class="text-xs text-slate-300">Central Motor Vehicles Rules — Rule 115(7) Mandatory Factory Gate Standards</p>
+          </div>
+        </div>
+        <button onclick="closeGovtRulesModal()" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <div class="overflow-x-auto border border-slate-200 rounded-xl">
+          <table class="w-full text-left text-xs sm:text-sm">
+            <thead class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+              <tr>
+                <th class="py-3 px-4">Emission Norm</th>
+                <th class="py-3 px-4">Vehicle Category</th>
+                <th class="py-3 px-4">Vehicle Age (from 1st Reg.)</th>
+                <th class="py-3 px-4">Govt. PUC Validity</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr class="bg-teal-50/60">
+                <td class="py-3 px-4 font-bold text-teal-900">Electric Vehicle (EV)</td>
+                <td class="py-3 px-4">Private / Commercial</td>
+                <td class="py-3 px-4">Any Age</td>
+                <td class="py-3 px-4"><span class="px-2.5 py-0.5 rounded-full bg-teal-600 text-white text-xs font-bold">Exempt (No PUC)</span></td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-bold text-slate-900">BS-VI (BS6)</td>
+                <td class="py-3 px-4">Private (Non-Transport)</td>
+                <td class="py-3 px-4">Up to 6 Years</td>
+                <td class="py-3 px-4 font-extrabold text-indigo-700">3 Years</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-bold text-slate-900">BS-VI (BS6)</td>
+                <td class="py-3 px-4">Commercial (Transport)</td>
+                <td class="py-3 px-4">Up to 6 Years</td>
+                <td class="py-3 px-4 font-extrabold text-indigo-700">2 Years</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-bold text-slate-900">BS-VI (BS6)</td>
+                <td class="py-3 px-4">Private & Commercial</td>
+                <td class="py-3 px-4">Over 6 Yrs up to 10 Yrs</td>
+                <td class="py-3 px-4 font-extrabold text-slate-800">1 Year</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-bold text-slate-900">BS-VI (BS6)</td>
+                <td class="py-3 px-4">Private & Commercial</td>
+                <td class="py-3 px-4">Over 10 Years</td>
+                <td class="py-3 px-4 font-extrabold text-amber-700">6 Months</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-bold text-slate-900">BS-IV (BS4)</td>
+                <td class="py-3 px-4">Private & Commercial</td>
+                <td class="py-3 px-4">Any Age</td>
+                <td class="py-3 px-4 font-extrabold text-amber-700">6 Months</td>
+              </tr>
+              <tr class="bg-rose-50/50">
+                <td class="py-3 px-4 font-bold text-rose-900">BS-I, BS-II, BS-III</td>
+                <td class="py-3 px-4">Private & Commercial</td>
+                <td class="py-3 px-4">Any Age</td>
+                <td class="py-3 px-4 font-extrabold text-rose-700">3 Months</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950">
+            <p class="font-bold mb-1"><i class="fa-solid fa-calendar-check mr-1"></i> 10-Day Advance Renewal Window</p>
+            <p>Renewing up to 10 days prior to expiry carries forward the full validity from the old expiry date with zero lost days.</p>
+          </div>
+          <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-950">
+            <p class="font-bold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Factory Gate & Statutory Penalty</p>
+            <p>Vehicles with expired PUC face ₹1,000–₹10,000 statutory fines and are automatically blocked at the Factory Main Gate.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button onclick="closeGovtRulesModal()" class="px-5 py-2 rounded-xl bg-navy-900 text-white text-xs font-bold hover:bg-navy-800 cursor-pointer">
+          Close Reference
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- JAVASCRIPT LOGIC: STATE, GOVT PUC ENGINE & WHATSAPP/GATE  -->
+  <!-- ========================================================= -->
+  <script>
+    // Reference Date aligned with current operational date (26 Nov 2026)
+    const TODAY_STR = "2026-11-26";
+    const TODAY_DATE = new Date("2026-11-26T00:00:00");
+
+    // Paste your deployed Google Apps Script Web App URL here if desired, or enter it in the UI panel
+    const SCRIPT_URL = "";
+    const STORAGE_KEYS = {
+      scriptUrl: "fleetgate_script_url_v1",
+      vehicles: "fleetgate_vehicles_v1",
+      alertConfig: "fleetgate_alert_config_v1"
+    };
+
+    function getActiveScriptUrl() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEYS.scriptUrl);
+        if (saved && saved.trim()) return saved.trim();
+      } catch (err) {
+        console.warn("Unable to read script URL from localStorage:", err);
+      }
+      return (SCRIPT_URL || "").trim();
+    }
+
+    function updateSyncStatusBadge(isConnected, labelText) {
+      const badge = document.getElementById("script-sync-status-badge");
+      if (!badge) return;
+      if (isConnected) {
+        badge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300";
+        badge.textContent = labelText || "Sheet Synced";
+      } else {
+        badge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700";
+        badge.textContent = labelText || "Local Demo Mode";
+      }
+    }
+
+    function persistLocalState() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.vehicles, JSON.stringify(fleetVehicles));
+        localStorage.setItem(STORAGE_KEYS.alertConfig, JSON.stringify(alertConfig));
+      } catch (err) {
+        console.warn("Unable to persist local state:", err);
+      }
+    }
+
+    function loadPersistedState() {
+      try {
+        const savedUrl = localStorage.getItem(STORAGE_KEYS.scriptUrl);
+        const urlInput = document.getElementById("config-script-url");
+        if (urlInput && savedUrl) urlInput.value = savedUrl;
+
+        const savedAlerts = localStorage.getItem(STORAGE_KEYS.alertConfig);
+        if (savedAlerts) {
+          alertConfig = { ...alertConfig, ...JSON.parse(savedAlerts) };
+          if (document.getElementById("config-whatsapp")) document.getElementById("config-whatsapp").value = alertConfig.whatsapp;
+          if (document.getElementById("config-email")) document.getElementById("config-email").value = alertConfig.email;
+          if (document.getElementById("config-gate-email")) document.getElementById("config-gate-email").value = alertConfig.gateEmail;
+          if (document.getElementById("sidebar-email-display")) document.getElementById("sidebar-email-display").textContent = alertConfig.email;
+        }
+
+        const savedVehicles = localStorage.getItem(STORAGE_KEYS.vehicles);
+        if (savedVehicles) {
+          const parsed = JSON.parse(savedVehicles);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            fleetVehicles = parsed;
+          }
+        }
+      } catch (err) {
+        console.warn("Error loading saved state:", err);
+      }
+    }
+
+    // Normalize vehicle rows returned from Google Sheets (/exec doGet)
+    function mapSheetRowToVehicle(row) {
+      const catRaw = String(row.Category || "COMMERCIAL").toUpperCase();
+      return {
+        regNo: String(row.Vehicle_No || row.regNo || "").toUpperCase().trim(),
+        driver: row.Driver || row.driver || "Assigned Fleet Driver",
+        vehicleType: row.Vehicle_Type || row.vehicleType || (catRaw.includes("PRIV") ? "Company Staff Vehicle" : "Commercial Fleet Vehicle"),
+        emissionNorm: String(row.Emission_Norm || row.emissionNorm || "BS-VI").toUpperCase(),
+        usageType: catRaw.includes("PRIV") ? "PRIVATE" : "COMMERCIAL",
+        regDate: row.Reg_Date || row.regDate || "2022-05-15",
+        pucExpiry: row.PUC_Expiry || row.pucExpiry || "2027-05-15",
+        insExpiry: row.Insurance_Expiry || row.insExpiry || "2027-05-15",
+        fitnessExpiry: row.Fitness_Expiry || row.fitnessExpiry || "2027-05-15",
+        permitExpiry: row.Permit_Expiry || row.permitExpiry || "2027-05-15",
+        rcExpiry: row.RC_Expiry || row.rcExpiry || "2037-05-15",
+        docLink: row.Doc_Link || ""
+      };
+    }
+
+    async function syncFromGoogleSheet(showFeedback = false) {
+      const url = getActiveScriptUrl();
+      if (!url) {
+        updateSyncStatusBadge(false, "Local Demo Mode");
+        if (showFeedback) showToast("Enter your Google Apps Script /exec URL first to sync from Google Sheets.", "info");
+        return;
+      }
+      updateSyncStatusBadge(false, "Syncing...");
+      try {
+        const res = await fetch(url, { method: "GET" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data && Array.isArray(data.vehicles) && data.vehicles.length > 0) {
+          fleetVehicles = data.vehicles.map(mapSheetRowToVehicle).filter(v => v.regNo);
+          persistLocalState();
+          populateDatalist();
+          renderDashboard();
+          renderDirectoryTable();
+        }
+        updateSyncStatusBadge(true, "Sheet Connected");
+        if (showFeedback) showToast(`Synced ${fleetVehicles.length} vehicles from Google Sheets!`, "success");
+      } catch (err) {
+        console.error("Sheet sync failed:", err);
+        updateSyncStatusBadge(false, "Sync Error");
+        if (showFeedback) showToast("Could not reach Apps Script URL. Verify deployment access is set to Anyone.", "info");
+      }
+    }
+
+    async function saveAndTestScriptUrl() {
+      const inputVal = (document.getElementById("config-script-url").value || "").trim();
+      try {
+        if (inputVal) {
+          localStorage.setItem(STORAGE_KEYS.scriptUrl, inputVal);
+        } else {
+          localStorage.removeItem(STORAGE_KEYS.scriptUrl);
+        }
+      } catch (err) {
+        console.warn("Failed saving URL:", err);
+      }
+
+      if (!inputVal) {
+        updateSyncStatusBadge(false, "Local Demo Mode");
+        showToast("Cleared Web App URL — running in Local Browser Mode.", "info");
+        return;
+      }
+
+      if (!inputVal.includes("/exec")) {
+        showToast("Warning: Web App URLs usually end with /exec. Testing connection anyway...", "info");
+      }
+      await syncFromGoogleSheet(true);
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = String(reader.result || "");
+          const base64 = result.includes(",") ? result.split(",")[1] : result;
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function pushVehicleUpdateToSheet(v, fileObj = null) {
+      const url = getActiveScriptUrl();
+      if (!url) return null;
+
+      const payload = {
+        Vehicle_No: v.regNo,
+        Category: v.usageType === "PRIVATE" ? "Private" : "Commercial",
+        Emission_Norm: v.emissionNorm,
+        Reg_Date: v.regDate,
+        RC_Expiry: v.rcExpiry,
+        Insurance_Expiry: v.insExpiry,
+        PUC_Expiry: v.pucExpiry,
+        Fitness_Expiry: v.fitnessExpiry,
+        Permit_Expiry: v.permitExpiry,
+        Doc_Link: v.docLink || ""
+      };
+
+      if (fileObj) {
+        payload.fileName = fileObj.name;
+        payload.mimeType = fileObj.type || "application/octet-stream";
+        payload.fileBase64 = await fileToBase64(fileObj);
+      }
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        updateSyncStatusBadge(true, "Sheet Connected");
+        return json;
+      } catch (err) {
+        console.error("Failed pushing update to Apps Script:", err);
+        updateSyncStatusBadge(false, "Push Pending");
+        showToast("Saved locally, but Google Sheet sync needs check.", "info");
+        return null;
+      }
+    }
+
+    let alertConfig = {
+      whatsapp: "+91 7760914701",
+      email: "fleet.compliance@company.in",
+      gateEmail: "maingate.security@company.in"
+    };
+
+    // Representative Fleet Dataset (representing the 500-vehicle master Google Sheet)
+    let fleetVehicles = [
+      {
+        regNo: "KA-01-AB-1234",
+        driver: "Ramesh Kumar",
+        vehicleType: "Heavy Goods Truck (16T)",
+        emissionNorm: "BS-VI",
+        usageType: "COMMERCIAL",
+        regDate: "2023-04-10",
+        pucExpiry: "2028-04-09",
+        insExpiry: "2027-06-15",
+        fitnessExpiry: "2027-08-20",
+        permitExpiry: "2028-03-31",
+        rcExpiry: "2038-04-09"
+      },
+      {
+        regNo: "KA-51-MN-8890",
+        driver: "Suresh Gowda",
+        vehicleType: "Container Lorry (20T)",
+        emissionNorm: "BS-IV",
+        usageType: "COMMERCIAL",
+        regDate: "2018-09-12",
+        pucExpiry: "2026-11-20", // EXPIRED 6 days ago!
+        insExpiry: "2027-03-10",
+        fitnessExpiry: "2027-02-18",
+        permitExpiry: "2027-09-11",
+        rcExpiry: "2033-09-11"
+      },
+      {
+        regNo: "KA-04-HG-4521",
+        driver: "Manjunath B.",
+        vehicleType: "Tata Ace Mini Truck",
+        emissionNorm: "BS-VI",
+        usageType: "COMMERCIAL",
+        regDate: "2021-12-01",
+        pucExpiry: "2026-12-04", // EXPIRING SOON (8 days left - inside 10-day PUC window)
+        insExpiry: "2027-05-22",
+        fitnessExpiry: "2027-01-15",
+        permitExpiry: "2027-11-30",
+        rcExpiry: "2036-11-30"
+      },
+      {
+        regNo: "KA-02-EV-9001",
+        driver: "Prakash Shetty",
+        vehicleType: "Tata Ace EV Cargo",
+        emissionNorm: "EV",
+        usageType: "COMMERCIAL",
+        regDate: "2025-01-20",
+        pucExpiry: "EXEMPT",
+        insExpiry: "2027-01-19",
+        fitnessExpiry: "2027-01-19",
+        permitExpiry: "2030-01-19",
+        rcExpiry: "2040-01-19"
+      },
+      {
+        regNo: "KA-53-TR-3312",
+        driver: "Abdul Kareem",
+        vehicleType: "Ashok Leyland Tipper",
+        emissionNorm: "BS-III",
+        usageType: "COMMERCIAL",
+        regDate: "2015-06-18",
+        pucExpiry: "2026-11-12", // EXPIRED (BS-III 3-month cycle missed)
+        insExpiry: "2026-11-24", // EXPIRED Insurance too
+        fitnessExpiry: "2027-04-10",
+        permitExpiry: "2027-06-17",
+        rcExpiry: "2030-06-17"
+      },
+      {
+        regNo: "KA-03-MG-7740",
+        driver: "Deepak Nair",
+        vehicleType: "Company Staff Innova (Private)",
+        emissionNorm: "BS-VI",
+        usageType: "PRIVATE",
+        regDate: "2024-02-14",
+        pucExpiry: "2027-02-13",
+        insExpiry: "2027-02-13",
+        fitnessExpiry: "2039-02-13",
+        permitExpiry: "N/A",
+        rcExpiry: "2039-02-13"
+      },
+      {
+        regNo: "KA-09-CC-6102",
+        driver: "Venkatesh R.",
+        vehicleType: "Eicher Pro 2049",
+        emissionNorm: "BS-VI",
+        usageType: "COMMERCIAL",
+        regDate: "2019-08-05", // >6 yrs old -> 1 Year PUC rule
+        pucExpiry: "2026-12-12", // EXPIRING SOON (16 days left)
+        insExpiry: "2027-04-01",
+        fitnessExpiry: "2027-08-04",
+        permitExpiry: "2027-08-04",
+        rcExpiry: "2034-08-04"
+      },
+      {
+        regNo: "KA-41-B-9921",
+        driver: "Harish Rao",
+        vehicleType: "Mahindra Bolero Pickup",
+        emissionNorm: "BS-IV",
+        usageType: "COMMERCIAL",
+        regDate: "2019-11-10",
+        pucExpiry: "2027-03-15",
+        insExpiry: "2026-11-18", // EXPIRED Insurance!
+        fitnessExpiry: "2027-01-30",
+        permitExpiry: "2027-11-09",
+        rcExpiry: "2034-11-09"
+      }
+    ];
+
+    let gateLogs = [
+      { time: "09:18 AM", regNo: "KA-51-MN-8890", rule: "BS-IV (6-Mo Rule)", decision: "DENIED", note: "PUC expired on 20-Nov-2026 • WhatsApp sent" },
+      { time: "08:52 AM", regNo: "KA-01-AB-1234", rule: "BS-VI Comm. (2-Yr Rule)", decision: "ALLOWED", note: "All docs valid till Apr 2028" },
+      { time: "08:30 AM", regNo: "KA-02-EV-9001", rule: "Electric (EV Exempt)", decision: "ALLOWED", note: "PUC Exempt • Insurance valid" }
+    ];
+
+    let currentDirectoryFilter = "ALL";
+
+    // Calculate exact age in years from First Registration Date
+    function calculateVehicleAgeYears(regDateStr) {
+      const reg = new Date(regDateStr + "T00:00:00");
+      const diffMs = TODAY_DATE - reg;
+      return Math.max(0, diffMs / (1000 * 60 * 60 * 24 * 365.25));
+    }
+
+    // Govt. of India 2026 CMVR Rule 115(7) PUC Validity Engine
+    function getGovtPucRuleDetails(emissionNorm, usageType, regDateStr) {
+      if (emissionNorm === "EV") {
+        return {
+          months: 0,
+          label: "Exempt (Electric Vehicle)",
+          shortBadge: "EV Exempt",
+          ruleClause: "CMVR 115(7) EV Exemption"
+        };
+      }
+      const ageYears = calculateVehicleAgeYears(regDateStr);
+      if (emissionNorm === "BS-VI") {
+        if (ageYears <= 6) {
+          if (usageType === "PRIVATE") {
+            return { months: 36, label: "3 Years (BS-VI Private ≤6 Yrs)", shortBadge: "3-Yr Govt Rule", ruleClause: "BS-VI Non-Transport ≤6 Yrs" };
+          } else {
+            return { months: 24, label: "2 Years (BS-VI Commercial ≤6 Yrs)", shortBadge: "2-Yr Govt Rule", ruleClause: "BS-VI Transport ≤6 Yrs" };
+          }
+        } else if (ageYears <= 10) {
+          return { months: 12, label: "1 Year (BS-VI 6–10 Yrs Old)", shortBadge: "1-Yr Govt Rule", ruleClause: "BS-VI Age 6–10 Yrs" };
+        } else {
+          return { months: 6, label: "6 Months (BS-VI >10 Yrs Old)", shortBadge: "6-Mo Govt Rule", ruleClause: "BS-VI Age >10 Yrs" };
+        }
+      }
+      if (emissionNorm === "BS-IV") {
+        return { months: 6, label: "6 Months (BS-IV Standard)", shortBadge: "6-Mo Govt Rule", ruleClause: "BS-IV Mandatory 6-Mo Cycle" };
+      }
+      return { months: 3, label: "3 Months (BS-I / II / III Tightened Rule)", shortBadge: "3-Mo Govt Rule", ruleClause: "BS-I/II/III 3-Mo Cycle" };
+    }
+
+    // Evaluate overall compliance status of a vehicle
+    function evaluateVehicleStatus(v) {
+      const checks = [];
+      const docList = [
+        { name: "PUC Emission", expiry: v.pucExpiry },
+        { name: "Insurance", expiry: v.insExpiry },
+        { name: "Fitness (FC)", expiry: v.fitnessExpiry },
+        { name: "Goods Permit", expiry: v.permitExpiry },
+        { name: "RC", expiry: v.rcExpiry }
+      ];
+
+      let minDays = 9999;
+      let expiredDocs = [];
+      let expiringDocs = [];
+
+      docList.forEach(doc => {
+        if (!doc.expiry || doc.expiry === "EXEMPT" || doc.expiry === "N/A") return;
+        const expDate = new Date(doc.expiry + "T00:00:00");
+        const daysLeft = Math.ceil((expDate - TODAY_DATE) / (1000 * 60 * 60 * 24));
+        if (daysLeft < minDays) minDays = daysLeft;
+
+        if (daysLeft < 0) {
+          expiredDocs.push(`${doc.name} (Expired ${Math.abs(daysLeft)}d ago on ${formatDisplayDate(doc.expiry)})`);
+        } else if (daysLeft <= 30) {
+          expiringDocs.push(`${doc.name} (${daysLeft}d left — ${formatDisplayDate(doc.expiry)})`);
+        }
+      });
+
+      if (expiredDocs.length > 0) {
+        return {
+          status: "BLOCKED",
+          reasons: expiredDocs,
+          summary: expiredDocs[0]
+        };
+      }
+      if (expiringDocs.length > 0) {
+        return {
+          status: "EXPIRING",
+          reasons: expiringDocs,
+          summary: expiringDocs[0]
+        };
+      }
+      return {
+        status: "CLEARED",
+        reasons: ["All mandatory documents valid"],
+        summary: "Cleared for Factory Entry"
+      };
+    }
+
+    function formatDisplayDate(isoStr) {
+      if (!isoStr || isoStr === "EXEMPT" || isoStr === "N/A") return isoStr;
+      const d = new Date(isoStr + "T00:00:00");
+      return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    // Build zero-cost wa.me WhatsApp URL
+    function buildWhatsAppUrl(messageText) {
+      const cleanDigits = alertConfig.whatsapp.replace(/\D/g, "");
+      return `https://wa.me/${cleanDigits}?text=${encodeURIComponent(messageText)}`;
+    }
+
+    function triggerWhatsAppVehicleAlert(regNo) {
+      const v = fleetVehicles.find(item => item.regNo === regNo);
+      if (!v) return;
+      const evalRes = evaluateVehicleStatus(v);
+      const pucRule = getGovtPucRuleDetails(v.emissionNorm, v.usageType, v.regDate);
+
+      let msg = "";
+      if (evalRes.status === "BLOCKED") {
+        msg = `🚨 *FLEETGATE MAIN GATE BLOCK ALERT*\n` +
+              `Vehicle No: *${v.regNo}* (${v.vehicleType})\n` +
+              `Driver: ${v.driver}\n` +
+              `Gate Status: *ENTRY DENIED (BLOCKED)*\n` +
+              `Reason: ${evalRes.reasons.join("; ")}\n` +
+              `Govt. Emission Rule: ${pucRule.label}\n` +
+              `Action Required: Please upload renewed certificate in FleetGate Vault immediately to unlock gate entry.`;
+      } else {
+        msg = `⚠️ *FLEETGATE RENEWAL REMINDER*\n` +
+              `Vehicle No: *${v.regNo}* (${v.vehicleType})\n` +
+              `Upcoming Renewal: ${evalRes.reasons.join("; ")}\n` +
+              `Govt. Emission Rule: ${pucRule.label}\n` +
+              `Note: Renew within the 10-day advance window to avoid Main Gate block.`;
+      }
+
+      window.open(buildWhatsAppUrl(msg), "_blank", "noopener");
+      showToast(`Opened WhatsApp alert draft for ${v.regNo} to ${alertConfig.whatsapp}`, "success");
+    }
+
+    function sendDailyWhatsAppDigest() {
+      const blocked = fleetVehicles.filter(v => evaluateVehicleStatus(v).status === "BLOCKED");
+      const expiring = fleetVehicles.filter(v => evaluateVehicleStatus(v).status === "EXPIRING");
+
+      const msg = `📊 *FLEETGATE DAILY COMPLIANCE DIGEST (${formatDisplayDate(TODAY_STR)})*\n` +
+                  `Total Fleet: 500 Vehicles\n\n` +
+                  `🔴 *BLOCKED AT MAIN GATE (${blocked.length} Active):*\n` +
+                  blocked.map(v => `• ${v.regNo}: ${evaluateVehicleStatus(v).summary}`).join("\n") +
+                  `\n\n🟠 *EXPIRING WITHIN 30 DAYS (${expiring.length} Active):*\n` +
+                  expiring.map(v => `• ${v.regNo}: ${evaluateVehicleStatus(v).summary}`).join("\n") +
+                  `\n\n_Generated via FleetGate Zero-Cost Compliance Portal_`;
+
+      window.open(buildWhatsAppUrl(msg), "_blank", "noopener");
+      showToast(`Daily WhatsApp digest prepared for ${alertConfig.whatsapp}`, "success");
+    }
+
+    // Navigation Tab Switcher
+    function switchTab(tabId) {
+      const sections = ["dashboard", "directory", "vault", "gate", "alerts"];
+      sections.forEach(s => {
+        document.getElementById(`view-${s}`).classList.toggle("hidden", s !== tabId);
+        const btn = document.getElementById(`nav-${s}`);
+        if (s === tabId) {
+          btn.classList.add("bg-indigo-600", "text-white", "shadow-md");
+          btn.classList.remove("text-slate-300", "hover:bg-navy-800");
+        } else {
+          btn.classList.remove("bg-indigo-600", "text-white", "shadow-md");
+          btn.classList.add("text-slate-300", "hover:bg-navy-800");
+        }
+      });
+
+      // Close mobile drawer if open
+      const sidebar = document.getElementById("sidebar");
+      if (!sidebar.classList.contains("-translate-x-full") && window.innerWidth < 1024) {
+        toggleMobileSidebar();
+      }
+    }
+
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      const backdrop = document.getElementById("sidebar-backdrop");
+      sidebar.classList.toggle("-translate-x-full");
+      backdrop.classList.toggle("hidden");
+    }
+
+    // Render Dashboard KPIs & Priority Feed
+    function renderDashboard() {
+      const blockedList = fleetVehicles.filter(v => evaluateVehicleStatus(v).status === "BLOCKED");
+      const expiringList = fleetVehicles.filter(v => evaluateVehicleStatus(v).status === "EXPIRING");
+
+      // Reflect realistic 500-fleet scale dynamically when user renews a blocked vehicle
+      const baseBlockedOffset = 11; // 11 additional vehicles in 500-fleet + live sample blocked
+      const baseExpiringOffset = 32;
+      const totalBlocked = baseBlockedOffset + blockedList.length;
+      const totalExpiring = baseExpiringOffset + expiringList.length;
+      const totalCleared = 500 - totalBlocked - totalExpiring;
+
+      document.getElementById("kpi-cleared").textContent = totalCleared;
+      document.getElementById("kpi-expiring").textContent = totalExpiring;
+      document.getElementById("kpi-blocked").textContent = totalBlocked;
+      document.getElementById("nav-blocked-badge").textContent = blockedList.length;
+
+      const priorityVehicles = [...blockedList, ...expiringList];
+      const container = document.getElementById("dashboard-priority-list");
+
+      if (priorityVehicles.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-sm text-emerald-700 font-semibold">All sample vehicles are compliant and cleared for Main Gate entry!</div>`;
+        return;
+      }
+
+      container.innerHTML = priorityVehicles.map(v => {
+        const evalRes = evaluateVehicleStatus(v);
+        const pucRule = getGovtPucRuleDetails(v.emissionNorm, v.usageType, v.regDate);
+        const isBlocked = evalRes.status === "BLOCKED";
+
+        return `
+          <div class="p-4 hover:bg-slate-50/90 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center font-bold text-sm ${isBlocked ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}">
+                <i class="fa-solid ${isBlocked ? 'fa-ban' : 'fa-triangle-exclamation'}"></i>
+              </div>
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="font-mono font-extrabold text-sm text-slate-900">${v.regNo}</span>
+                  <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${isBlocked ? 'bg-rose-600 text-white' : 'bg-amber-100 text-amber-800'}">
+                    ${isBlocked ? 'GATE BLOCKED' : 'EXPIRING SOON'}
+                  </span>
+                  <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700">
+                    ${v.emissionNorm} • ${pucRule.shortBadge}
+                  </span>
+                </div>
+                <p class="text-xs font-semibold ${isBlocked ? 'text-rose-700' : 'text-amber-800'} mt-1">${evalRes.summary}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">${v.vehicleType} • Driver: ${v.driver}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
+              <button onclick="openVaultForVehicle('${v.regNo}')" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition cursor-pointer">
+                Renew Doc
+              </button>
+              <button onclick="triggerWhatsAppVehicleAlert('${v.regNo}')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-2xs transition cursor-pointer">
+                <i class="fa-brands fa-whatsapp"></i> Alert
+              </button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // Fleet Directory Filter & Render
+    function setDirectoryFilter(filter) {
+      currentDirectoryFilter = filter;
+      document.querySelectorAll(".dir-filter-btn").forEach(btn => {
+        btn.classList.remove("bg-indigo-600", "text-white", "font-bold");
+        btn.classList.add("bg-slate-100", "text-slate-700");
+      });
+      const activeBtn = document.getElementById(`filter-${filter}`);
+      activeBtn.classList.remove("bg-slate-100", "text-slate-700", "bg-amber-50", "bg-rose-50", "bg-teal-50");
+      activeBtn.classList.add("bg-indigo-600", "text-white", "font-bold");
+      renderDirectoryTable();
+    }
+
+    function renderDirectoryTable() {
+      const searchVal = (document.getElementById("directory-search").value || "").trim().toLowerCase();
+      const tbody = document.getElementById("directory-table-body");
+
+      const filtered = fleetVehicles.filter(v => {
+        const evalRes = evaluateVehicleStatus(v);
+        if (currentDirectoryFilter === "CLEARED" && evalRes.status !== "CLEARED") return false;
+        if (currentDirectoryFilter === "EXPIRING" && evalRes.status !== "EXPIRING") return false;
+        if (currentDirectoryFilter === "BLOCKED" && evalRes.status !== "BLOCKED") return false;
+        if (currentDirectoryFilter === "EV" && v.emissionNorm !== "EV") return false;
+
+        if (searchVal) {
+          const hay = `${v.regNo} ${v.driver} ${v.vehicleType} ${v.emissionNorm}`.toLowerCase();
+          return hay.includes(searchVal);
+        }
+        return true;
+      });
+
+      document.getElementById("dir-showing-count").textContent = filtered.length;
+
+      tbody.innerHTML = filtered.map(v => {
+        const evalRes = evaluateVehicleStatus(v);
+        const pucRule = getGovtPucRuleDetails(v.emissionNorm, v.usageType, v.regDate);
+        const ageYrs = calculateVehicleAgeYears(v.regDate).toFixed(1);
+
+        let statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle-check"></i> CLEARED</span>`;
+        if (evalRes.status === "BLOCKED") {
+          statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-600 text-white"><i class="fa-solid fa-ban"></i> BLOCKED</span>`;
+        } else if (evalRes.status === "EXPIRING") {
+          statusBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800"><i class="fa-solid fa-clock"></i> EXPIRING</span>`;
+        }
+
+        const pucDateColor = v.pucExpiry === "EXEMPT"
+          ? "text-teal-700 font-bold"
+          : (new Date(v.pucExpiry) < TODAY_DATE ? "text-rose-600 font-bold" : "text-slate-800 font-semibold");
+
+        const insDateColor = new Date(v.insExpiry) < TODAY_DATE ? "text-rose-600 font-bold" : "text-slate-800 font-semibold";
+
+        return `
+          <tr class="hover:bg-slate-50/90 transition">
+            <td class="py-3.5 px-4">
+              <p class="font-mono font-extrabold text-slate-900">${v.regNo}</p>
+              <p class="text-xs text-slate-500">${v.vehicleType} • ${v.driver}</p>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="px-2 py-0.5 rounded text-xs font-bold ${v.emissionNorm === 'EV' ? 'bg-teal-100 text-teal-800' : 'bg-indigo-50 text-indigo-800'}">
+                ${v.emissionNorm}
+              </span>
+              <p class="text-[11px] text-slate-500 mt-1">${v.usageType === 'COMMERCIAL' ? 'Commercial' : 'Private'} • ${ageYrs} yrs old</p>
+            </td>
+            <td class="py-3.5 px-4">
+              <p class="text-xs ${pucDateColor}">${formatDisplayDate(v.pucExpiry)}</p>
+              <span class="inline-block mt-0.5 text-[10px] font-semibold px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded">${pucRule.shortBadge}</span>
+            </td>
+            <td class="py-3.5 px-4">
+              <p class="text-xs ${insDateColor}">${formatDisplayDate(v.insExpiry)}</p>
+            </td>
+            <td class="py-3.5 px-4 text-xs text-slate-600">
+              <p>FC: ${formatDisplayDate(v.fitnessExpiry)}</p>
+              <p class="text-[11px] text-slate-400">Permit: ${formatDisplayDate(v.permitExpiry)}</p>
+            </td>
+            <td class="py-3.5 px-4">
+              ${statusBadge}
+            </td>
+            <td class="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
+              <button onclick="checkGateVehicle('${v.regNo}'); switchTab('gate');" title="Verify on Main Gate Screen" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer">
+                Gate Check
+              </button>
+              <button onclick="openVaultForVehicle('${v.regNo}')" title="Upload / Renew Document" class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold cursor-pointer">
+                Upload
+              </button>
+              <button onclick="triggerWhatsAppVehicleAlert('${v.regNo}')" title="Send WhatsApp Alert" class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold cursor-pointer">
+                <i class="fa-brands fa-whatsapp"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    // Smart 2026 Govt. PUC Rule Calculator inside Upload Vault
+    function recalculateGovtPucRule() {
+      const docType = document.getElementById("form-doc-type").value;
+      const regDateStr = document.getElementById("form-reg-date").value || "2022-05-15";
+      const emissionNorm = document.getElementById("form-emission-norm").value;
+      const usageType = document.getElementById("form-usage-type").value;
+      const issueDateStr = document.getElementById("form-issue-date").value || TODAY_STR;
+
+      const ruleBox = document.getElementById("govt-rule-live-box");
+      const expiryInput = document.getElementById("form-expiry-date");
+
+      if (docType !== "PUC") {
+        // Default 1-year validity for Insurance / Fitness / Permit
+        const base = new Date(issueDateStr + "T00:00:00");
+        base.setFullYear(base.getFullYear() + 1);
+        base.setDate(base.getDate() - 1);
+        expiryInput.disabled = false;
+        expiryInput.value = base.toISOString().split("T")[0];
+
+        ruleBox.className = "p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-950 space-y-1";
+        ruleBox.innerHTML = `
+          <p class="text-xs font-extrabold uppercase tracking-wider text-indigo-800">Standard Statutory Validity Applied</p>
+          <p class="text-xs">Auto-set 1-year renewal cycle ending <strong>${formatDisplayDate(expiryInput.value)}</strong>. You may adjust manually if printed certificate differs.</p>
+        `;
+        return;
+      }
+
+      const rule = getGovtPucRuleDetails(emissionNorm, usageType, regDateStr);
+      const ageYrs = calculateVehicleAgeYears(regDateStr).toFixed(1);
+
+      if (emissionNorm === "EV") {
+        expiryInput.value = "";
+        expiryInput.disabled = true;
+        ruleBox.className = "p-4 rounded-2xl bg-teal-50 border border-teal-300 text-teal-950 space-y-1.5";
+        ruleBox.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-extrabold uppercase tracking-wider text-teal-800"><i class="fa-solid fa-bolt mr-1"></i> Govt. Rule Check: Electric Vehicle (EV)</span>
+            <span class="px-2 py-0.5 rounded bg-teal-600 text-white text-[11px] font-bold">PUC EXEMPT</span>
+          </div>
+          <p class="text-xs leading-relaxed">Under CMVR Rule 115(7), zero-emission Electric Vehicles are <strong>permanently exempt</strong> from PUC testing. Main Gate access will remain <strong>GREEN (CLEARED)</strong>.</p>
+        `;
+        return;
+      }
+
+      expiryInput.disabled = false;
+      const start = new Date(issueDateStr + "T00:00:00");
+      const calcExpiry = new Date(start);
+      calcExpiry.setMonth(calcExpiry.getMonth() + rule.months);
+      calcExpiry.setDate(calcExpiry.getDate() - 1);
+      const calcExpiryIso = calcExpiry.toISOString().split("T")[0];
+      expiryInput.value = calcExpiryIso;
+
+      // 10-day advance renewal window start date
+      const windowStart = new Date(calcExpiry);
+      windowStart.setDate(windowStart.getDate() - 10);
+      const windowStartIso = windowStart.toISOString().split("T")[0];
+
+      ruleBox.className = "p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-1.5";
+      ruleBox.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-800">
+            <i class="fa-solid fa-scale-balanced mr-1"></i> Govt. Rule Check (CMVR Rule 115(7) — 2026)
+          </span>
+          <span class="px-2.5 py-0.5 rounded-full bg-emerald-600 text-white text-[11px] font-bold">${rule.label}</span>
+        </div>
+        <p class="text-xs leading-relaxed">
+          Based on <strong>${emissionNorm} ${usageType === 'COMMERCIAL' ? 'Commercial' : 'Private'}</strong> (Vehicle Age: <strong>${ageYrs} yrs</strong>), mandatory validity is <strong>${rule.months} months</strong>.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
+          <div class="p-2 rounded-lg bg-white/80 border border-emerald-200">
+            <span class="text-slate-500">Auto-Calculated Expiry:</span>
+            <strong class="block text-emerald-900">${formatDisplayDate(calcExpiryIso)}</strong>
+          </div>
+          <div class="p-2 rounded-lg bg-white/80 border border-emerald-200">
+            <span class="text-slate-500">10-Day Advance Renewal Window:</span>
+            <strong class="block text-indigo-800">Opens ${formatDisplayDate(windowStartIso)}</strong>
+          </div>
+        </div>
+      `;
+    }
+
+    function openVaultForVehicle(regNo) {
+      switchTab("vault");
+      document.getElementById("form-reg-no").value = regNo;
+      prefillVehicleDetails(regNo);
+    }
+
+    function prefillVehicleDetails(regNo) {
+      const clean = regNo.trim().toUpperCase();
+      const v = fleetVehicles.find(item => item.regNo === clean);
+      if (v) {
+        document.getElementById("form-reg-date").value = v.regDate;
+        document.getElementById("form-emission-norm").value = v.emissionNorm;
+        document.getElementById("form-usage-type").value = v.usageType;
+        // Auto-select whichever document is expired so operator can renew immediately
+        if (v.pucExpiry !== "EXEMPT" && new Date(v.pucExpiry) < TODAY_DATE) {
+          document.getElementById("form-doc-type").value = "PUC";
+        } else if (new Date(v.insExpiry) < TODAY_DATE) {
+          document.getElementById("form-doc-type").value = "INSURANCE";
+        }
+        recalculateGovtPucRule();
+      }
+    }
+
+    function handleFileSelect(input) {
+      const label = document.getElementById("file-upload-label");
+      if (input.files && input.files[0]) {
+        label.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fa-solid fa-file-circle-check mr-1"></i>Selected: ${input.files[0].name}</span>`;
+      }
+    }
+
+    function resetVaultForm() {
+      document.getElementById("doc-upload-form").reset();
+      document.getElementById("form-issue-date").value = TODAY_STR;
+      document.getElementById("file-upload-label").textContent = "Click to select certificate PDF or photo (Stored in Free Google Drive)";
+      recalculateGovtPucRule();
+    }
+
+    async function handleDocumentSave(e) {
+      e.preventDefault();
+      const regNo = document.getElementById("form-reg-no").value.trim().toUpperCase();
+      const docType = document.getElementById("form-doc-type").value;
+      const regDate = document.getElementById("form-reg-date").value;
+      const emissionNorm = document.getElementById("form-emission-norm").value;
+      const usageType = document.getElementById("form-usage-type").value;
+      const expiryDate = emissionNorm === "EV" && docType === "PUC" ? "EXEMPT" : document.getElementById("form-expiry-date").value;
+      const fileInput = document.getElementById("form-doc-file");
+      const fileObj = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+
+      let v = fleetVehicles.find(item => item.regNo === regNo);
+      if (!v) {
+        v = {
+          regNo,
+          driver: "Assigned Fleet Driver",
+          vehicleType: usageType === "COMMERCIAL" ? "Commercial Goods Vehicle" : "Company Staff Vehicle",
+          emissionNorm,
+          usageType,
+          regDate,
+          pucExpiry: emissionNorm === "EV" ? "EXEMPT" : "2027-11-25",
+          insExpiry: "2027-11-25",
+          fitnessExpiry: "2027-11-25",
+          permitExpiry: "2027-11-25",
+          rcExpiry: "2036-11-25"
+        };
+        fleetVehicles.unshift(v);
+      } else {
+        v.regDate = regDate;
+        v.emissionNorm = emissionNorm;
+        v.usageType = usageType;
+      }
+
+      if (docType === "PUC") v.pucExpiry = expiryDate;
+      if (docType === "INSURANCE") v.insExpiry = expiryDate;
+      if (docType === "FITNESS") v.fitnessExpiry = expiryDate;
+      if (docType === "PERMIT") v.permitExpiry = expiryDate;
+      if (docType === "RC") v.rcExpiry = expiryDate;
+
+      persistLocalState();
+      populateDatalist();
+      renderDashboard();
+      renderDirectoryTable();
+      checkGateVehicle(regNo);
+
+      if (getActiveScriptUrl()) {
+        showToast(`Syncing ${docType} for ${regNo} to Google Sheets & Drive...`, "info");
+        const syncRes = await pushVehicleUpdateToSheet(v, fileObj);
+        if (syncRes && syncRes.docLink) v.docLink = syncRes.docLink;
+        persistLocalState();
+        showToast(`Synced ${docType} for ${regNo} to Google Sheet & Drive!`, "success");
+      } else {
+        showToast(`Saved ${docType} for ${regNo} locally & synced Main Gate status!`, "success");
+      }
+
+      switchTab("gate");
+    }
+
+    // Main Gate Security Terminal Verification
+    function checkGateVehicle(rawRegNo) {
+      const regNo = (rawRegNo || "").trim().toUpperCase();
+      const inputEl = document.getElementById("gate-search-input");
+      if (regNo) inputEl.value = regNo;
+
+      const display = document.getElementById("gate-result-display");
+      if (!regNo) {
+        display.innerHTML = `<div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center text-sm text-slate-500">Enter a vehicle number above or click a Quick Test button to check factory gate clearance.</div>`;
+        return;
+      }
+
+      const v = fleetVehicles.find(item => item.regNo === regNo);
+      if (!v) {
+        display.innerHTML = `
+          <div class="p-6 rounded-2xl bg-amber-50 border-2 border-amber-400 text-amber-950 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shrink-0">
+                <i class="fa-solid fa-question"></i>
+              </div>
+              <div>
+                <span class="px-2.5 py-0.5 rounded bg-amber-200 text-amber-900 text-xs font-extrabold uppercase">Unregistered Visitor Vehicle</span>
+                <h4 class="text-xl font-extrabold font-mono mt-1">${regNo} — NOT IN 500-FLEET MASTER</h4>
+                <p class="text-xs mt-1">Register vehicle documents in the Upload Vault before allowing factory entry.</p>
+              </div>
+            </div>
+            <button onclick="openVaultForVehicle('${regNo}')" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 cursor-pointer">
+              Register Vehicle Now
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      const evalRes = evaluateVehicleStatus(v);
+      const pucRule = getGovtPucRuleDetails(v.emissionNorm, v.usageType, v.regDate);
+      const nowTime = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
+      if (evalRes.status === "BLOCKED") {
+        // Add to Gate Log
+        gateLogs.unshift({
+          time: nowTime,
+          regNo: v.regNo,
+          rule: pucRule.shortBadge,
+          decision: "DENIED",
+          note: `${evalRes.reasons[0]} • Guard flagged`
+        });
+        renderGateLogs();
+
+        display.innerHTML = `
+          <div class="p-6 sm:p-7 rounded-2xl bg-rose-600 text-white shadow-xl gate-deny-pulse space-y-5">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div class="flex items-start sm:items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-white text-rose-600 flex items-center justify-center text-3xl shrink-0 shadow-md">
+                  <i class="fa-solid fa-hand"></i>
+                </div>
+                <div>
+                  <span class="px-3 py-1 rounded-full bg-rose-900/70 text-rose-100 text-xs font-extrabold uppercase tracking-wider">
+                    DO NOT OPEN BOOM BARRIER • ENTRY DENIED
+                  </span>
+                  <h4 class="text-2xl sm:text-3xl font-black font-mono tracking-tight mt-1.5">${v.regNo} — BLOCKED</h4>
+                  <p class="text-sm text-rose-100 font-medium mt-0.5">${v.vehicleType} • Driver: ${v.driver} • Norm: ${v.emissionNorm}</p>
+                </div>
+              </div>
+
+              <button onclick="triggerWhatsAppVehicleAlert('${v.regNo}')" class="px-5 py-3.5 rounded-2xl bg-white hover:bg-rose-50 text-rose-700 font-extrabold text-sm shadow-lg flex items-center justify-center gap-2.5 shrink-0 transition cursor-pointer">
+                <i class="fa-brands fa-whatsapp text-xl text-emerald-600"></i>
+                <span>Report Blocked Arrival (+91 7760914701)</span>
+              </button>
+            </div>
+
+            <div class="p-4 rounded-xl bg-rose-800/70 border border-rose-400/40 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div>
+                <p class="uppercase font-bold text-rose-200 tracking-wider">Blocking Reason(s):</p>
+                <ul class="mt-1 space-y-1 font-bold text-sm text-white">
+                  ${evalRes.reasons.map(r => `<li><i class="fa-solid fa-circle-xmark mr-1.5"></i>${r}</li>`).join("")}
+                </ul>
+              </div>
+              <div>
+                <p class="uppercase font-bold text-rose-200 tracking-wider">Applicable Govt. Emission Rule:</p>
+                <p class="mt-1 font-semibold text-sm text-white">${pucRule.label}</p>
+                <p class="text-rose-200 mt-0.5">Upload renewed PDF in Vault to auto-clear gate lock.</p>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        gateLogs.unshift({
+          time: nowTime,
+          regNo: v.regNo,
+          rule: pucRule.shortBadge,
+          decision: "ALLOWED",
+          note: evalRes.status === "EXPIRING" ? `Allowed with warning: ${evalRes.reasons[0]}` : "All statutory documents verified"
+        });
+        renderGateLogs();
+
+        display.innerHTML = `
+          <div class="p-6 sm:p-7 rounded-2xl bg-emerald-600 text-white shadow-xl space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div class="flex items-start sm:items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-white text-emerald-600 flex items-center justify-center text-3xl shrink-0 shadow-md">
+                  <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div>
+                  <span class="px-3 py-1 rounded-full bg-emerald-900/60 text-emerald-100 text-xs font-extrabold uppercase tracking-wider">
+                    ALL DOCUMENTS COMPLIANT • ALLOW FACTORY ENTRY
+                  </span>
+                  <h4 class="text-2xl sm:text-3xl font-black font-mono tracking-tight mt-1.5">${v.regNo} — CLEARED</h4>
+                  <p class="text-sm text-emerald-100 font-medium mt-0.5">${v.vehicleType} • Driver: ${v.driver}</p>
+                </div>
+              </div>
+
+              <div class="px-4 py-3 rounded-2xl bg-emerald-800/60 border border-emerald-400/40 text-xs">
+                <p class="text-emerald-200 uppercase font-bold">Govt. PUC Verification</p>
+                <p class="font-extrabold text-sm mt-0.5">${pucRule.label}</p>
+                <p class="text-emerald-100 mt-0.5">PUC Valid Until: <strong>${formatDisplayDate(v.pucExpiry)}</strong></p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function renderGateLogs() {
+      const tbody = document.getElementById("gate-log-body");
+      tbody.innerHTML = gateLogs.slice(0, 8).map(log => `
+        <tr>
+          <td class="py-3 px-4 font-mono text-slate-500">${log.time}</td>
+          <td class="py-3 px-4 font-mono font-bold text-slate-900">${log.regNo}</td>
+          <td class="py-3 px-4 text-slate-600">${log.rule}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${log.decision === 'ALLOWED' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+              ${log.decision}
+            </span>
+          </td>
+          <td class="py-3 px-4 text-slate-600">${log.note}</td>
+        </tr>
+      `).join("");
+    }
+
+    // Top Header Global Search
+    function handleGlobalSearch(query) {
+      const dropdown = document.getElementById("global-search-results");
+      const q = query.trim().toLowerCase();
+      if (!q) {
+        dropdown.classList.add("hidden");
+        return;
+      }
+
+      const matches = fleetVehicles.filter(v =>
+        v.regNo.toLowerCase().includes(q) || v.driver.toLowerCase().includes(q)
+      );
+
+      if (matches.length === 0) {
+        dropdown.innerHTML = `<div class="p-3 text-xs text-slate-500">No matching vehicle in sample list. Press Enter in Gate Check to test.</div>`;
+      } else {
+        dropdown.innerHTML = matches.map(v => {
+          const st = evaluateVehicleStatus(v).status;
+          const badge = st === "BLOCKED"
+            ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-100 text-rose-700">BLOCKED</span>`
+            : (st === "EXPIRING"
+              ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">EXPIRING</span>`
+              : `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700">CLEARED</span>`);
+          return `
+            <button onclick="selectGlobalSearchVehicle('${v.regNo}')" class="w-full text-left p-3 hover:bg-slate-50 flex items-center justify-between gap-2 transition">
+              <div>
+                <p class="font-mono font-bold text-xs text-slate-900">${v.regNo}</p>
+                <p class="text-[11px] text-slate-500">${v.driver} • ${v.emissionNorm}</p>
+              </div>
+              ${badge}
+            </button>
+          `;
+        }).join("");
+      }
+      dropdown.classList.remove("hidden");
+    }
+
+    function selectGlobalSearchVehicle(regNo) {
+      document.getElementById("global-search-results").classList.add("hidden");
+      document.getElementById("global-search-input").value = "";
+      checkGateVehicle(regNo);
+      switchTab("gate");
+    }
+
+    // Alert Settings & Helpers
+    function saveAlertSettings() {
+      alertConfig.whatsapp = document.getElementById("config-whatsapp").value.trim() || "+91 7760914701";
+      alertConfig.email = document.getElementById("config-email").value.trim() || "fleet.compliance@company.in";
+      alertConfig.gateEmail = document.getElementById("config-gate-email").value.trim() || "maingate.security@company.in";
+      document.getElementById("sidebar-email-display").textContent = alertConfig.email;
+      persistLocalState();
+      showToast("Alert escalation contacts updated!", "success");
+    }
+
+    function sendTestWhatsApp() {
+      const msg = `✅ *FleetGate Compliance System Test*\nFactory Main Gate & 500-Vehicle Alert Channel is active for ${alertConfig.whatsapp}.`;
+      window.open(buildWhatsAppUrl(msg), "_blank", "noopener");
+    }
+
+    function simulateEmailAlert() {
+      showToast(`Simulated 8:00 AM Gmail Digest sent to ${alertConfig.email} & ${alertConfig.gateEmail}`, "info");
+    }
+
+    function copyAppsScriptCode() {
+      const code = document.getElementById("apps-script-code").innerText;
+      const textarea = document.createElement("textarea");
+      textarea.value = code;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      showToast("Google Apps Script copied to clipboard!", "success");
+    }
+
+    function openGovtRulesModal() {
+      const modal = document.getElementById("govt-rules-modal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeGovtRulesModal() {
+      const modal = document.getElementById("govt-rules-modal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    function populateDatalist() {
+      const dl = document.getElementById("vehicle-datalist");
+      dl.innerHTML = fleetVehicles.map(v => `<option value="${v.regNo}">${v.vehicleType} (${v.driver})</option>`).join("");
+    }
+
+    // Custom Toast Notification (No alert() used)
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toast-container");
+      const toast = document.createElement("div");
+      const bg = type === "success" ? "bg-navy-900 border-emerald-500" : "bg-navy-900 border-indigo-500";
+      toast.className = `pointer-events-auto p-3.5 rounded-xl ${bg} border-l-4 text-white text-xs font-semibold shadow-2xl flex items-center justify-between gap-3 transition-all`;
+      toast.innerHTML = `
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4500);
+    }
+
+    // Close global search dropdown when clicking outside
+    document.addEventListener("click", (e) => {
+      const input = document.getElementById("global-search-input");
+      const dropdown = document.getElementById("global-search-results");
+      if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add("hidden");
+      }
+    });
+
+    // Initialize Application on Load
+    window.onload = async function () {
+      document.getElementById("form-issue-date").value = TODAY_STR;
+      loadPersistedState();
+      populateDatalist();
+      renderDashboard();
+      renderDirectoryTable();
+      recalculateGovtPucRule();
+      checkGateVehicle("KA-51-MN-8890"); // Pre-load a blocked vehicle on the Gate screen so user immediately sees how gate denial works
+      if (getActiveScriptUrl()) {
+        await syncFromGoogleSheet(false);
+      } else {
+        updateSyncStatusBadge(false, "Local Demo Mode");
+      }
+    };
+  </script>
+</body>
+</html>
